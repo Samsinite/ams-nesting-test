@@ -1,5 +1,23 @@
 require 'test_helper'
 
+module ActiveModel
+  class Serializer
+    def embedded_in_root_associations
+      associations = self.class._associations
+      included_associations = filter(associations.keys)
+      associations.each_with_object({}) do |(name, association), hash|
+        if included_associations.include? name
+          if association.embed_in_root?
+            associated_data = Array(send(association.name))
+            hash[association.root_key] = serialize(association, associated_data)
+          end
+        end
+        hash.merge!(association.embedded_in_root_associations)
+      end
+    end
+  end
+end
+
 class UserTest < ActiveSupport::TestCase
   test 'its serialization includes the objects from a deeply nested association' do
     profile = Profile.create(title: 'test profile')
