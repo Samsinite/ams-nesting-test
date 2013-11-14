@@ -7,12 +7,12 @@ module ActiveModel
       included_associations = filter(associations.keys)
       associations.each_with_object({}) do |(name, association), hash|
         if included_associations.include? name
+          associated_data = Array(send(association.name))
           if association.embed_in_root?
-            associated_data = Array(send(association.name))
             hash[association.root_key] = serialize(association, associated_data)
           end
+          hash.merge!(association.build_serializer(associated_data, scope: scope).embedded_in_root_associations)
         end
-        hash.merge!(association.embedded_in_root_associations)
       end
     end
   end
@@ -32,7 +32,7 @@ class UserTest < ActiveSupport::TestCase
           'post_ids' => [post.id]
         }
       },
-      'posts' => [
+      :posts => [
         {
           id: post.id,
           title: 'test post',
